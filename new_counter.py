@@ -32,5 +32,13 @@ class Counter:
         self.ser.close()
 
 
+# com18 is green fa-2 counter
+# com17 is the fa-5 counter
+
+# fa-5 counter works
 c = Counter('COM18')
-print(c.readonce(29))
+print(c.readonce(datalength * 5))
+
+# fa-2 doesn't work
+c = Counter('COM17')
+print(c.readonce(datalength * 5))
