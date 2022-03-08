@@ -3,8 +3,8 @@ try: # python 2
 except NameError: # python 3
     pass
 import sys, os, time, datetime, random, logging
-from Qt.QtCore import QTimer
-from Qt.QtWidgets import QMainWindow
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QMainWindow
 from Qt.QtCompat import loadUi
 import hpcounters, orionlasers
 import AsyncSocketComms, socket
@@ -610,7 +610,7 @@ class CounterWidget(QMainWindow):
 
 def main():
     from counter_widget import CounterWidget
-    from Qt.QtWidgets import QApplication
+    from PyQt5.QtWidgets import QApplication
     import sys
     import allowSetForegroundWindow
     from win32gui import SetWindowPos
