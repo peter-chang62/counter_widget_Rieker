@@ -1,0 +1,13 @@
+<SuperLaserLandPLL_settings>
+    <Reference_frequency DDC0="25e6" DDC1="25e6" />
+    <Beat_frequency_modulation_range DAC0="2e9" DAC1="0.5e6" DAC2="9e6" />
+    <Output_limits_low DAC0=".4" DAC1="0" DAC2="0" />
+    <Output_limits_high DAC0="1.5" DAC1="8" DAC2="55" />
+    <Input_Output_gain ADC0="1" ADC1="1" DAC0="2" DAC1="8" />
+    <Output_offset_in_volts DAC0="0.96" DAC1="2" DAC2="27" />
+    <PLL0_settings chkKp="True" chkKd="True" chkKpCrossing="True" chkLock="False" fi="1.82e4" fii="2.14e3" kp="1.5e1" fd="1.91e5" fdf="1.32e6" />
+    <PLL1_settings chkKp="False" chkKd="False" chkKpCrossing="False" chkLock="False" fi="6.31e4" fii="9.12e3" kp="-1.73e1" fd="60e3" fdf="600e3" />
+    <PLL2_settings chkKp="False" chkKd="False" chkKpCrossing="False" chkLock="False" fi="1.20e5" fii="2.45e1" kp="-4.10e0" fd="1e7" fdf="1e7" />
+    <PWM0_settings standard="3.3" levels="256" default="0.0" minval="0.0" maxval="3.3" />
+    <Main_window_settings Integration_limit="5e6" N_samples_adc="1.75e3" N_samples_ddc="1e6" refresh_delay="500" />
+</SuperLaserLandPLL_settings>

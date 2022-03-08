@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1000</width>
+    <height>641</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="minimumSize">
+    <size>
+     <width>900</width>
+     <height>600</height>
+    </size>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <layout class="QVBoxLayout" name="layout_laser"/>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="layout_temp">
+      <item>
+       <widget class="QFrame" name="frm_controls">
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <layout class="QHBoxLayout" name="tempControlBox">
+           <item>
+            <widget class="QFrame" name="frm_Oscillator">
+             <property name="styleSheet">
+              <string notr="true">
+
+QToolButton:checked, QToolButton:pressed {
+
+background-color:rgb(193,210,238);
+border: 1px solid rgb(60,127,177);
+}
+
+QToolButton:hover{
+background-color:rgb(224,232,246);
+}
+
+QToolButton:checked:hover{
+background-color:rgb(193,210,238);
+}
+
+QPushButton:checked:hover{
+background-color:rgb(193,210,238);
+}</string>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_2">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_2">
+                <property name="font">
+                 <font>
+                  <pointsize>12</pointsize>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Comb 1</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_3">
+                <property name="text">
+                 <string>Current Temp (°C)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1" colspan="2">
+               <widget class="QLabel" name="lbl_current_Oscillator">
+                <property name="font">
+                 <font>
+                  <pointsize>10</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>-</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label">
+                <property name="text">
+                 <string>Setpoint (°C)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1" colspan="2">
+               <widget class="user_friendly_QLineEdit" name="edit_userSetpoint_Oscillator"/>
+              </item>
+              <item row="3" column="0" colspan="2">
+               <widget class="QToolButton" name="btn_enable_Oscillator">
+                <property name="text">
+                 <string>Enable Output</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="2">
+               <widget class="QToolButton" name="btn_disable_Oscillator">
+                <property name="text">
+                 <string>Disable Output</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0" colspan="2">
+               <widget class="QCheckBox" name="chk_useAdjustValues_Oscillator">
+                <property name="font">
+                 <font>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Use Adjust Values</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="2">
+               <widget class="QLabel" name="lbl_oscAdjust">
+                <property name="text">
+                 <string>Adjust:</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+             <zorder>lbl_current_Oscillator</zorder>
+             <zorder>label_2</zorder>
+             <zorder>label_3</zorder>
+             <zorder>label</zorder>
+             <zorder>edit_userSetpoint_Oscillator</zorder>
+             <zorder>btn_enable_Oscillator</zorder>
+             <zorder>btn_disable_Oscillator</zorder>
+             <zorder>lbl_oscAdjust</zorder>
+             <zorder>chk_useAdjustValues_Oscillator</zorder>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="frm_Transceiver">
+             <property name="styleSheet">
+              <string notr="true">
+
+QToolButton:checked, QToolButton:pressed {
+
+background-color:rgb(193,210,238);
+border: 1px solid rgb(60,127,177);
+}
+
+QToolButton:hover{
+background-color:rgb(224,232,246);
+}
+
+QToolButton:checked:hover{
+background-color:rgb(193,210,238);
+}
+
+QPushButton:checked:hover{
+background-color:rgb(193,210,238);
+}</string>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_3">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_5">
+                <property name="font">
+                 <font>
+                  <pointsize>12</pointsize>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Comb 2</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_6">
+                <property name="text">
+                 <string>Current Temp (°C)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1" colspan="2">
+               <widget class="QLabel" name="lbl_current_Transceiver">
+                <property name="font">
+                 <font>
+                  <pointsize>10</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>-</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_4">
+                <property name="text">
+                 <string>Setpoint (°C)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1" colspan="2">
+               <widget class="user_friendly_QLineEdit" name="edit_userSetpoint_Transceiver"/>
+              </item>
+              <item row="3" column="0" colspan="2">
+               <widget class="QToolButton" name="btn_enable_Transceiver">
+                <property name="text">
+                 <string>Enable Output</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="2">
+               <widget class="QToolButton" name="btn_disable_Transceiver">
+                <property name="text">
+                 <string>Disable Output</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0" colspan="2">
+               <widget class="QCheckBox" name="chk_useAdjustValues_Transceiver">
+                <property name="font">
+                 <font>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Use Adjust Values</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="2">
+               <widget class="QLabel" name="lbl_transAdjust">
+                <property name="text">
+                 <string>Adjust:</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="graphEnableBox">
+           <item>
+            <widget class="QCheckBox" name="chk_enableDataLog">
+             <property name="text">
+              <string>Enable Data Logging</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chk_enableGraph">
+             <property name="text">
+              <string>Enable Graph</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_13">
+             <property name="text">
+              <string>Time Scale</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="user_friendly_QLineEdit" name="edit_timeScale"/>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFrame" name="graphFrame">
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <layout class="QHBoxLayout" name="graphBox"/>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="graphControlsBox">
+           <item>
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="0" column="3">
+              <widget class="user_friendly_QLineEdit" name="oscGraphMax"/>
+             </item>
+             <item row="0" column="2">
+              <widget class="user_friendly_QLineEdit" name="oscGraphMin"/>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_10">
+               <property name="text">
+                <string>Comb 1 Graph Y [min, max]:</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QGridLayout" name="gridLayout_4">
+             <item row="0" column="3">
+              <widget class="user_friendly_QLineEdit" name="receiverGraphMax"/>
+             </item>
+             <item row="0" column="2">
+              <widget class="user_friendly_QLineEdit" name="receiverGraphMin"/>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_11">
+               <property name="text">
+                <string>Comb 2 Graph Y [min, max]:</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1000</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>user_friendly_QLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>user_friendly_QLineEdit.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

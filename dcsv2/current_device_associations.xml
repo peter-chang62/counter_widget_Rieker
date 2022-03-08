@@ -1,0 +1,24 @@
+<device_associations>
+                
+    <comb_box   name="RDCS" 
+                description="Rieker Mobile Dual Comb System" 
+                stylesheet="#MainWindow {color: white; background-color: #FF0000;}" 
+                ni6009_serial="01A9320B" 
+                ni9264_serial="01A8E263" 
+                config_file="./config_RDCS.xml" />
+
+	<comb_box   name="NDC System" 
+                description="DCS" 
+                stylesheet="#MainWindow {color: white; background-color: #CCFFFF;}" 
+                ni6009_serial="01AB1F1D" 
+                ni9264_serial="01AB3156" 
+                config_file="./config_NDCS.xml" />
+				
+	<comb_box   name="PDC System" 
+                description="DCS" 
+                stylesheet="#MainWindow {color: white; background-color: #CCFFFF;}" 
+                ni6009_serial="01AF8239" 
+                ni9264_serial="01AF3167" 
+                config_file="./config_PDCS.xml"
+				arduino_port="COM5"/>
+</device_associations>

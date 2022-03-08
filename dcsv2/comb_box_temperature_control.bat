@@ -1,0 +1,1 @@
+start "" "C:\WinPython-64bit-2.7.10.3\python-2.7.10.amd64\pythonw.exe" "C:\Users\riekerlab\Desktop\Software\temperature_control\version 6\comb_box_temperature_control.pyw" "/R" &

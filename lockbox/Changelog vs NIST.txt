@@ -1,0 +1,3 @@
+FreqErrorWindowWithTempControlV2.py:
+   In runTempControlLoop(), in if self.qchk_clear_temp_control.isChecked() == True: changed behavoir so that instead of IPC client printing '0.0\n' to set adjust value to 0, prints 'COMMITADJUST\n'. CU comb temp control programs regonize this commnad to add adjust value to requested value and zero out adjust value, which causes no temperature jolts
+   Note the the orignal NIST temp control may read non float IPC values as a call to zero adjust values in the same manner as sending '0.0\n', and so this might not break their usability with this version

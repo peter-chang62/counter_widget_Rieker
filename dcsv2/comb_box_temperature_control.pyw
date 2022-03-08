@@ -1,0 +1,257 @@
+"""
+At this point this program is an aggressive rewrite of a NIST gui to use NI
+stuff to talk to PTC10000 temperature controller. At this point it has been
+modified to use an Adruino to turn lasers on and off and monitor their
+temps.
+
+Note that the "Oscillator" and "Transceiver" naming convention is left over
+from the NIST program; Oscillator = Comb 1, Transceiver = Comb 2
+
+Safety measures are in place to avoid damaging the combs:
+1) Safe temperature limits are in the configuration files.
+2) User input is always validated against the limits. If it is not, it is
+   ignored.
+3) Socket adjust values are limited to +-5 degrees C (hardcoded right now...).
+4) The DAQ output is clamped to the previously mentioned limits.
+5) The actual temperature is monitored. If it reaches one limit, it might mean
+   thermal runaway. The current output is disabled to prevent bad things from
+   happening.
+"""
+
+################################################################################################################################
+## Load libraries
+################################################################################################################################
+import sys
+from PyQt4 import QtGui
+from NI_tools import *
+import xml.etree.ElementTree as ET
+from initial_config import initial_config
+from allowSetForegroundWindow import *
+import USB_control
+import ctypes
+import time
+from lockfile import *
+
+APPID = u'NIST.COMB_BOX_TEMPERATURE_CTRL.0.1'
+
+
+################################################################################################################################
+## Main function
+################################################################################################################################
+def main():
+
+    ################################################################
+    ## Redirect stdout/stderr to files if opened in standalone mode
+    ################################################################
+    if '/R' in sys.argv[1:]:
+        try:
+            sys.stdout = open(time.strftime('.\logs\stdout_%Y%m%dT%H%M%S.txt'), "w")
+            sys.stderr = open(time.strftime('.\logs\stderr_%Y%m%dT%H%M%S.txt'), "w")
+        except:
+            pass
+    print(sys.argv)
+
+    ################################################################
+    ## Initilize Qt App
+    ################################################################
+    allowSetForegroundWindow()
+    app = QtGui.QApplication(sys.argv)
+
+    ################################################################
+    ## Find NI devices automatically
+    ################################################################
+    (list_of_serials, device_name_by_serial, device_type_by_serial) = generateNIDevicesDicts()
+
+    ################################################################
+    ## Find NI6009/NI9264 that correspond to comb boxes
+    ################################################################
+
+    # The configuration files should be complete and contain the following
+    comb_box_keys = [
+        'name',
+        'description',
+        'stylesheet',
+        'ni6009_serial',
+        'ni9264_serial',
+        'config_file'
+    ]
+
+    # Same for specific configuration file
+    control_loop_keys = [
+        'name',
+        'temperature_default',
+        'temperature_minimum',
+        'temperature_maximum',
+        'enabled_default',
+        'ni6009_actual_ch',
+        'ni6009_setpoint_ch',
+        'ni6009_enable_port',
+        'ni6009_enable_line',
+        'enabled_is_high',
+        'ni9264_output_ch',
+        'compensator_num',
+        'compensator_den',
+        'steinhart_coefs',
+        'bias_current',
+        'outer_loop_port'
+    ]
+
+    # Fill these lists with valid comb boxes
+    descriptions = list()
+    configurations = list()
+
+    try:
+        # Load master configuration file
+        tree1 = ET.parse("./current_device_associations.xml")
+        # Read as XML
+        xmlroot1 = tree1.getroot()
+        for el1 in xmlroot1.getchildren():
+            # If this is not a comb box, continue
+            if el1.tag != "comb_box":
+                continue
+            # Check that all the expected keys are there
+            if not all(k in el1.attrib for k in comb_box_keys):
+                print('Missing key in comb box')
+                continue
+            # Extract keys
+            comb_box_name          = el1.attrib['name']
+            comb_box_description   = el1.attrib['description']
+            comb_box_ni6009_serial = el1.attrib['ni6009_serial']
+            comb_box_ni9264_serial = el1.attrib['ni9264_serial']
+            comb_box_config_file   = el1.attrib['config_file']
+            try:
+                arduino_port       = el1.attrib['arduino_port']
+            except KeyError:
+                arduino_port = None
+            # Verify that the serial numbers are in the list generated by the NI tool.
+            # If they are not, the box is probably disconnected.
+            if  (comb_box_ni6009_serial not in list_of_serials) or \
+                (comb_box_ni9264_serial not in list_of_serials):
+                continue
+
+            # Check if lockfiles are locked. If they are, this means that this box is already opened by another process.
+            try:
+                filelock6009 = LockedFile('.\\locks\\%s.txt' % comb_box_ni6009_serial)
+                filelock6009.close()
+                filelock9264 = LockedFile('.\\locks\\%s.txt' % comb_box_ni9264_serial)
+                filelock9264.close()
+                print('Lockfiles are unlocked')
+            except LockError:
+                print('Lockfiles are locked')
+                continue
+
+            # Copy the whole dictionary
+            comb_box_config = el1.attrib.copy()
+            # Get the device names
+            comb_box_config['ni9264_devname'] = device_name_by_serial[comb_box_config['ni9264_serial']]
+            comb_box_config['ni6009_devname'] = device_name_by_serial[comb_box_config['ni6009_serial']]
+            comb_box_config['arduino_port'] = arduino_port
+
+            # Create control loop configurations
+            control_loop_configs = {}
+            # Load specific configuration file
+            tree2 = ET.parse(comb_box_config_file)
+            # Read as XML
+            xmlroot2 = tree2.getroot()
+            for el2 in xmlroot2.getchildren():
+                # If this not a control loop, continue
+                if el2.tag != "control_loop":
+                    continue
+                # Check that all the expected keys are there
+                if not all(k in el2.attrib for k in control_loop_keys):
+                    print('Missing key in control loop')
+                    raise KeyError
+                # Copy to configurations
+                control_loop_configs[el2.attrib['name']] = el2.attrib.copy()
+
+            # Verify that the 3 usual loops are there.
+            # This is tied to the current GUI implementation. If more loops are added, this will need to be changed.
+            if  'Oscillator'  not in control_loop_configs or \
+                'Transceiver' not in control_loop_configs:
+                print('The current GUI expects Oscillator and Transceiver to be present in the configuration.')
+                continue
+
+            # Copy configuration
+            comb_box_config['control_loops'] = control_loop_configs
+
+            # Build description string. This is also used as the window title
+            description = "%s (%s) : NI6009 SN %s, NI9264 SN %s" %  (comb_box_name,
+                                                                     comb_box_description,
+                                                                     comb_box_ni6009_serial,
+                                                                     comb_box_ni9264_serial)
+            if arduino_port is not None:
+                description += ', Arduino Port ' + arduino_port
+            # Append to lists
+            descriptions.append(description)
+            configurations.append(comb_box_config)
+
+    # These things happen
+    except (IOError, KeyError):
+        msg = 'A problem occured while reading the xml files. Please check the syntax.'
+        QtGui.QMessageBox.critical(None,'Error',msg)
+        print(msg)
+        return
+    # These things happen too
+    if len(descriptions) == 0:
+        msg = 'No matching comb box found. Please check connections, configuration files and lock files.'
+        QtGui.QMessageBox.warning(None,'Error',msg)
+        print(msg)
+        return
+
+    ################################################################
+    ## Run init GUI, allowing to select the box
+    ################################################################
+    if len(descriptions) > 1:
+        Initial_Config = initial_config(descriptions, {})
+        Initial_Config.raise_()
+        Initial_Config.show()
+        app.exec_()
+        if Initial_Config.bOk == False:
+            # User clicked cancel. simply close the program:
+            return
+        i = Initial_Config.selectedIndex
+    else:
+        i = 0
+    # Get configuration and description
+    configuration = configurations[i]
+    description = descriptions[i]
+    print(description)
+    print(configuration)
+
+    ################################################################
+    ## Lock files
+    ################################################################
+    print('Locking lockfiles')
+    filelock6009 = LockedFile('.\\locks\\%s.txt' % configuration['ni6009_serial'])
+    filelock9264 = LockedFile('.\\locks\\%s.txt' % configuration['ni9264_serial'])
+
+    ################################################################
+    ## Setup the GUI
+    ################################################################
+    aw = USB_control.ApplicationWindow(configuration)
+    aw.setWindowTitle("%s - Temperature Control" % description)
+    aw.show()
+
+    ################################################################
+    ## Set program icon
+    ################################################################
+    # hack for win7
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APPID)
+    icon = QtGui.QIcon('comb_on_fire.ico')
+    app.setWindowIcon(icon)
+    aw.setWindowIcon(icon)
+
+    ################################################################
+    ## Run the GUI
+    ################################################################
+    app.exec_()
+
+    ################################################################
+    ## Unlock files
+    ################################################################
+    print('Unlocking lockfiles')
+    filelock6009.close()
+    filelock9264.close()
+
+if __name__ == '__main__':
+    main()
