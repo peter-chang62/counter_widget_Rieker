@@ -1,6 +1,6 @@
-try: # python 2
+try:  # python 2
     range = xrange
-except NameError: # python 3
+except NameError:  # python 3
     pass
 import sys, os, time, datetime, random, logging
 from PyQt5.QtCore import QTimer
@@ -12,13 +12,15 @@ import AsyncSocketComms, socket
 # USETEMP = True
 USETEMP = False
 
+
 def read_text(edit_field):
     usr_in = edit_field.text()
     try:
         return float(usr_in)
     except ValueError:
-        print('%s is not a valid input for "%s"' % (usr_in,edit_field.whatsThis()))
+        print('%s is not a valid input for "%s"' % (usr_in, edit_field.whatsThis()))
     return None
+
 
 def setup_ui(uifile, base_instance=None):
     """Load a Qt Designer .ui file and returns an instance of the user interface
@@ -35,11 +37,12 @@ def setup_ui(uifile, base_instance=None):
     else:
         for member in dir(ui):
             if not member.startswith('__') and \
-               member != 'staticMetaObject':
+                    member != 'staticMetaObject':
                 setattr(base_instance, member, getattr(ui, member))
         return ui
 
-#GUI Subclass
+
+# GUI Subclass
 class CounterWidget(QMainWindow):
 
     def __init__(self, parent=None):
@@ -50,18 +53,18 @@ class CounterWidget(QMainWindow):
         ### Set simData = True to test program w/o a counter hooked up ###
         ##################################################################
         self.simData = False
-        self.channels = [1,2]
+        self.channels = [1, 2]
 
         # Create indexed tuples of UI items that exist for each channel
-        self.display_channels = (self.display_channel1,self.display_channel2)
-        self.display_channelsErrors = (self.display_channel1Error,self.display_channel2Error)
-        self.edit_freqTargets = (self.edit_f1Target,self.edit_f2Target)
-        self.check_logChannels = (self.check_logChan1,self.check_logChan2)
-        self.check_activateChannels = (self.check_actChan1,self.check_actChan2)
-        self.check_refFeedbacks = (self.check_refFeedback1,self.check_refFeedback2)
-        self.check_tempFeedbacks = (self.check_tempFeedback1,self.check_tempFeedback2)
-        self.button_commitTempAdjustments = (self.button_commitTempAdjust1,self.button_commitTempAdjust2)
-        self.edit_portNumbers = (self.edit_chan1Port,self.edit_chan2Port)
+        self.display_channels = (self.display_channel1, self.display_channel2)
+        self.display_channelsErrors = (self.display_channel1Error, self.display_channel2Error)
+        self.edit_freqTargets = (self.edit_f1Target, self.edit_f2Target)
+        self.check_logChannels = (self.check_logChan1, self.check_logChan2)
+        self.check_activateChannels = (self.check_actChan1, self.check_actChan2)
+        self.check_refFeedbacks = (self.check_refFeedback1, self.check_refFeedback2)
+        self.check_tempFeedbacks = (self.check_tempFeedback1, self.check_tempFeedback2)
+        self.button_commitTempAdjustments = (self.button_commitTempAdjust1, self.button_commitTempAdjust2)
+        self.edit_portNumbers = (self.edit_chan1Port, self.edit_chan2Port)
 
         # Connect buttons to functions
         self.button_close.clicked.connect(self.close_cleanup)
@@ -97,16 +100,15 @@ class CounterWidget(QMainWindow):
         self.check_enableLaserTemp.clicked.connect(lambda checked: self.edit_laserTemp.setEnabled(checked))
         self.edit_laserTemp.returnPressed.connect(self.set_laser_temp)
 
-########## Turns out this doesn't work :( ##############################################################
-#        for index in range(len(self.channels)):
-#            print(index)
-#            self.check_activateChannels[index].clicked.connect(self.enable_channels)
-#            self.check_logChannels[index].clicked.connect(lambda: self.enable_frequency_logging(index))
-#            self.edit_freqTargets[index].editingFinished.connect(lambda: self.user_set_target(index))
-#            self.check_refFeedbacks[index].clicked.connect(lambda: self.enable_reference_feedback(index))
-#            self.check_tempFeedbacks[index].clicked.connect(lambda: self.enable_temperature_feedback(index))
-########################################################################################################
-
+        ########## Turns out this doesn't work :( ##############################################################
+        #        for index in range(len(self.channels)):
+        #            print(index)
+        #            self.check_activateChannels[index].clicked.connect(self.enable_channels)
+        #            self.check_logChannels[index].clicked.connect(lambda: self.enable_frequency_logging(index))
+        #            self.edit_freqTargets[index].editingFinished.connect(lambda: self.user_set_target(index))
+        #            self.check_refFeedbacks[index].clicked.connect(lambda: self.enable_reference_feedback(index))
+        #            self.check_tempFeedbacks[index].clicked.connect(lambda: self.enable_temperature_feedback(index))
+        ########################################################################################################
 
         ##################################################################
         ########### SET COUNTER BEHAVIOR IN THIS SECTION #################
@@ -116,40 +118,40 @@ class CounterWidget(QMainWindow):
         # counterName = 'HEWLETT-PACKARD,53131A,0,3536' #PDCS System
 
         # How often to log frequencies
-        self.freq_log_period = .1 #s
+        self.freq_log_period = .1  # s
 
         # How often to feedback to reference laser
-        self.laser_feedback_period = 2 #s
+        self.laser_feedback_period = 2  # s
         # Deviation from target frequency that triggers laser feedback
-        self.laser_feedback_threshold = 5 #Hz
+        self.laser_feedback_threshold = 5  # Hz
         # Max frequency deviation from target before laser feedback is canceled
-        self.laser_allowed_frequency_detune = 120 #Hz
+        self.laser_allowed_frequency_detune = 120  # Hz
         # Number of consecutive times the frequency deviation can be bigger than max allowed before feedback is canceled
         self.laser_feedback_strike_limit = 3
 
         # How often to feedback to comb temperature
-        self.temp_feedback_period = 10 #s
+        self.temp_feedback_period = 10  # s
         # Temperature step size during temperature tuning
-        self.temp_step = 0.08 #deg C
+        self.temp_step = 0.08  # deg C
         # Deviation from target frequency that triggers temperature feedback
-        self.temp_feedback_threshold = 100 #Hz
+        self.temp_feedback_threshold = 100  # Hz
         # Max magnitude temperature adjustment that is allowed
-        self.temp_max_allowed_adjust = 5 #deg C
+        self.temp_max_allowed_adjust = 5  # deg C
         # IPC socket port numbers for [channel 1, channel 2] temperature feedback
-        self.temp_port_numbers = [60002,60003]
+        self.temp_port_numbers = [60002, 60003]
 
         # [min,max] frequencies that are allowed to be entered as targets
-        self.acceptableFreqRange = [199000000,204690000] #Hz
+        self.acceptableFreqRange = [199000000, 204690000]  # Hz
 
         # Deliminator used in log file
         self.delim = ','
         # Log file header (set to '' for none)
-        self.hdr_str = 'Time (s)'+self.delim+'Frequency (Hz)'
+        self.hdr_str = 'Time (s)' + self.delim + 'Frequency (Hz)'
         # String written on each line of log. First number is filled with time,
         # in seconds, from the log start; second number filled with frequency in Hz
-        self.logfmt = '\n{:.2f}'+self.delim+'{}'
+        self.logfmt = '\n{:.2f}' + self.delim + '{}'
         # Datetime format used in logfile names, logging events, etc
-        self.timefmt =  '%Y-%m-%d_%H%M%S'
+        self.timefmt = '%Y-%m-%d_%H%M%S'
 
         # Make log directory
         cwd = os.getcwd()
@@ -160,7 +162,8 @@ class CounterWidget(QMainWindow):
         # Set up logger
         self.logger_name = 'counter'
         self.logger_level = logging.DEBUG
-        fh = logging.FileHandler('%s\\%s_counterlog.log' % (self.log_dir,datetime.datetime.now().strftime(self.timefmt)), 'w')
+        fh = logging.FileHandler(
+            '%s\\%s_counterlog.log' % (self.log_dir, datetime.datetime.now().strftime(self.timefmt)), 'w')
         sh = logging.StreamHandler()
         formatter = logging.Formatter('%(asctime)s  %(message)s', self.timefmt)
         fh.setFormatter(formatter)
@@ -168,37 +171,37 @@ class CounterWidget(QMainWindow):
 
         self.log = logging.getLogger(self.logger_name)
         self.log.setLevel(self.logger_level)
-        self.log.handlers = [fh,sh]
+        self.log.handlers = [fh, sh]
 
         ##################################################################
 
         # Initialize variables
         num = len(self.channels)
 
-        self.IPC_clients = [None]*num
-        self.tempFeedbacks = [False]*num
-        self.tempFeedbackStartDatetimes = [None]*num
-        self.lastTempFeedbackTimes = [0]*num
-        self.tempAdjustValues = [0]*num
+        self.IPC_clients = [None] * num
+        self.tempFeedbacks = [False] * num
+        self.tempFeedbackStartDatetimes = [None] * num
+        self.lastTempFeedbackTimes = [0] * num
+        self.tempAdjustValues = [0] * num
 
-        self.refLaserFeedbacks = [False]*len(self.channels)
-        self.refFeedbackStrikes = [0]*len(self.channels)
+        self.refLaserFeedbacks = [False] * len(self.channels)
+        self.refFeedbackStrikes = [0] * len(self.channels)
         self.laser_connected = False
         self.lastRefFeedbackTime = 0
 
-        self.logging_channel = [False]*num
-        self.log_files = [None]*num
-        self.last_log_time = [0]*num
-        self.log_start_times = [0]*num
+        self.logging_channel = [False] * num
+        self.log_files = [None] * num
+        self.last_log_time = [0] * num
+        self.log_start_times = [0] * num
 
         self.index = 0
-        self.channel_is_active = [True]*num
+        self.channel_is_active = [True] * num
         self.startTime = time.clock()
         self.disp_format = '{:,.1f}'
         self.dispSmallFormat = '{:.1f}'
         self.edit_laserPort.setText('COM6')
 
-        #Pick some random starting frequencies
+        # Pick some random starting frequencies
         self.freqs = [199867900.421, 199868526.215]
         self.freqTargets = self.freqs[:]
         self.freqTargets = [199869965.598, 199870591.410]
@@ -209,12 +212,14 @@ class CounterWidget(QMainWindow):
             self.update_display(index)
             self.edit_freqTargets[index].setText('{:.3f}'.format(self.freqTargets[index]))
 
-
         # Load counter
         if self.simData:
             self.gateTime = 0.1
         else:
-            self.counter = hpcounters.AgilentCounter(None, False ,0.1)
+            """initializes the counter, and takes the first measurement index tells it which channel to take the 
+            measurement for, it toggles between the two since you have two frequency combs """
+
+            self.counter = hpcounters.AgilentCounter(None, False, 0.1)
             self.counter.set_clock_external(True)
             self.counter.set_apporx_freq([1, 2], 199868311)
             self.gateTime = self.counter.get_gate_time()
@@ -225,25 +230,24 @@ class CounterWidget(QMainWindow):
         # this is the fastest we can acquire measurements
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.timer_handler)
-        self.timer.start(round(1500*self.gateTime))
+        self.timer.start(round(1500 * self.gateTime))
 
         # Show the GUI
         self.populate_textboxes()
         self.show()
 
-
     def timer_handler(self):
 
         thisTime = time.clock()
 
-        # slef.index is last channel that counter was set to measure
+        # self.index is last channel that counter was set to measure
         index = self.index
         self.increment_index()
         # Now self.index is set to next channel to be measured
 
         # Get measurement result
         if self.simData:
-            self.freqs[index] = self.freqs[index] + (random.random()-.5)*20
+            self.freqs[index] = self.freqs[index] + (random.random() - .5) * 20
         else:
             try:
                 # Get result of last measurement
@@ -253,15 +257,14 @@ class CounterWidget(QMainWindow):
                 # This is likely a counter timeout; probably there is no signal
                 # on self.channel[index], so stop trying to measure it
                 sys.exc_clear()
-                self.log.warning('Read failed on channel '+str(self.channels[index]))
+                self.log.warning('Read failed on channel ' + str(self.channels[index]))
                 self.check_activateChannels[index].setChecked(False)
                 self.enable_channels()
                 return
-            # Start new measurement
+            # Start new measurement for the incremented index
             self.counter.begin_freq_measure(self.channels[self.index])
 
         self.calc_values()
-
 
         # Update display
         self.update_display(index)
@@ -270,11 +273,12 @@ class CounterWidget(QMainWindow):
         if self.logging_channel[index]:
             if thisTime - self.last_log_time[index] > self.freq_log_period:
                 # Time to log another point...
-                self.log_files[index].write(self.logfmt.format(thisTime-self.log_start_times[index],self.freqs[index]))
+                self.log_files[index].write(
+                    self.logfmt.format(thisTime - self.log_start_times[index], self.freqs[index]))
                 self.log_files[index].flush()
                 # If it has been too long since last log, set current time to last log
                 # Otherwise just add log period to last log time to keep interval constant
-                if thisTime - self.last_log_time[index] < self.freq_log_period*2:
+                if thisTime - self.last_log_time[index] < self.freq_log_period * 2:
                     self.last_log_time[index] += self.freq_log_period
                 else:
                     self.last_log_time[index] = thisTime
@@ -285,15 +289,17 @@ class CounterWidget(QMainWindow):
                 dF = self.freqs[index] - self.freqTargets[index]
 
                 if abs(dF) > self.laser_allowed_frequency_detune:
-                    self.log.warning('Frequency difference from target (%.1f) greater than allowed (%.1f)' % (dF,self.laser_allowed_frequency_detune))
+                    self.log.warning('Frequency difference from target (%.1f) greater than allowed (%.1f)' % (
+                        dF, self.laser_allowed_frequency_detune))
                     self.refFeedbackStrikes[index] += 1
-                    self.log.warning('Strike #%i (%i strikes allowed)' % (self.refFeedbackStrikes[index],self.laser_feedback_strike_limit))
+                    self.log.warning('Strike #%i (%i strikes allowed)' % (
+                        self.refFeedbackStrikes[index], self.laser_feedback_strike_limit))
                     if self.refFeedbackStrikes[index] > self.laser_feedback_strike_limit:
                         # Frequency is too far off, turn off feedback
                         self.check_refFeedbacks[index].setChecked(False)
                         self.enable_reference_feedback(index)
 
-                else: # Rep rate has NOT drifted too far from target
+                else:  # Rep rate has NOT drifted too far from target
                     self.refFeedbackStrikes[index] = 0
                     if abs(dF) > self.laser_feedback_threshold:
                         # Frequency has drifted far enough to feedback to laser
@@ -303,9 +309,9 @@ class CounterWidget(QMainWindow):
                                 # Temp up, R down -> wl up, f down
                                 # So if dF > 0 turn R down
                                 if dF > 0:
-                                    dT = -1 #Ohms
+                                    dT = -1  # Ohms
                                 else:
-                                    dT = 1 #Ohms
+                                    dT = 1  # Ohms
                                 # dT changes thermister setpoint of laser in Ohms
                                 # dT>0 raises rep rate; dT<0 drops rep rate
                                 new_temp = self.reference_laser.change_t(dT)
@@ -315,9 +321,9 @@ class CounterWidget(QMainWindow):
                                 # I up -> wl up, f down
                                 # So if dF > 0 turn I up
                                 if dF > 0:
-                                    dI = 1 #0.1 mA
+                                    dI = 1  # 0.1 mA
                                 else:
-                                    dI = -1 #0.1 mA
+                                    dI = -1  # 0.1 mA
                                 new_I = self.reference_laser.change_i(dI)
                                 self.log.info('Ref laser current set to %i (0.1mA)' % new_I)
 
@@ -341,15 +347,17 @@ class CounterWidget(QMainWindow):
                             feedbackSign = 1
                         else:
                             feedbackSign = -1
-                        self.tempAdjustValues[index] += feedbackSign*self.temp_step
+                        self.tempAdjustValues[index] += feedbackSign * self.temp_step
 
                         # Limit temperature feedback value
                         if abs(self.tempAdjustValues[index]) > self.temp_max_allowed_adjust:
-                            self.tempAdjustValues[index] = feedbackSign*self.temp_max_allowed_adjust
-                            self.log.warning('Channel %i temp adjust at limit (%.2f)' % (self.channels[index],self.tempAdjustValues[index]))
+                            self.tempAdjustValues[index] = feedbackSign * self.temp_max_allowed_adjust
+                            self.log.warning('Channel %i temp adjust at limit (%.2f)' % (
+                                self.channels[index], self.tempAdjustValues[index]))
 
                         self.IPC_clients[index].send_text('%f\n' % self.tempAdjustValues[index])
-                        self.log.info('Channel %i temperature adjusted by %.2f' % (self.channels[index],self.tempAdjustValues[index]))
+                        self.log.info('Channel %i temperature adjusted by %.2f' % (
+                            self.channels[index], self.tempAdjustValues[index]))
                     except socket.error:
                         # Failed to send to the socket port; the server has
                         # been disconnected (happens if temp program closed).
@@ -360,25 +368,24 @@ class CounterWidget(QMainWindow):
                         self.enable_temperature_feedback(index)
                     self.lastTempFeedbackTimes[index] = thisTime
 
-
-
     def calc_values(self):
-        self.deltaF = abs(self.freqs[1]-self.freqs[0])
-        self.nq = (self.nq*self.nqAverages + min(self.freqs)/self.deltaF)/(self.nqAverages + 1)
+        self.deltaF = abs(self.freqs[1] - self.freqs[0])
+        self.nq = (self.nq * self.nqAverages + min(self.freqs) / self.deltaF) / (self.nqAverages + 1)
         self.nqAverages += 1
 
     def reset_nq(self):
         self.nq = 0
         self.nqAverages = 0
 
-    def update_display(self,index):
+    def update_display(self, index):
         self.display_channels[index].display(self.disp_format.format(self.freqs[index]))
-        self.display_channelsErrors[index].display(self.dispSmallFormat.format(self.freqs[index]-self.freqTargets[index]))
+        self.display_channelsErrors[index].display(
+            self.dispSmallFormat.format(self.freqs[index] - self.freqTargets[index]))
         self.display_dchannel.display(self.dispSmallFormat.format(self.deltaF))
         self.display_nq.display(self.dispSmallFormat.format(self.nq))
         self.display_nqAverages.display(self.nqAverages)
 
-    def get_next_index(self,index=None):
+    def get_next_index(self, index=None):
         # Returns next index, looping back to zero when last index is passed
         if index is None:
             index = self.index
@@ -387,7 +394,7 @@ class CounterWidget(QMainWindow):
         else:
             return index + 1
 
-    def increment_index(self,n=0):
+    def increment_index(self, n=0):
         # Moves self.index to the next index and loops back to 0 when last index is passed
         num = len(self.channels)
         if self.index == num - 1:
@@ -428,7 +435,7 @@ class CounterWidget(QMainWindow):
         else:
             self.timer.stop()
 
-    def enable_frequency_logging(self,index):
+    def enable_frequency_logging(self, index):
         channel = self.channels[index]
         try:
             self.log_files[index].close()
@@ -436,8 +443,8 @@ class CounterWidget(QMainWindow):
             sys.exc_clear()
         if self.check_logChannels[index].isChecked():
             self.logging_channel[index] = True
-            startDateTime = datetime.datetime.now().strftime(self.timefmt) #YYY-MM-DD_HHMMSS
-            self.log_files[index] = open(self.log_dir + startDateTime + '_chan'+str(channel), 'w')
+            startDateTime = datetime.datetime.now().strftime(self.timefmt)  # YYY-MM-DD_HHMMSS
+            self.log_files[index] = open(self.log_dir + startDateTime + '_chan' + str(channel), 'w')
             self.log_files[index].write(self.hdr_str)
             self.log_start_times[index] = time.clock()
             self.last_log_time[index] = -9999
@@ -447,20 +454,21 @@ class CounterWidget(QMainWindow):
                 self.log.warning('Channel %i logging stopped' % channel)
                 self.logging_channel[index] = False
 
-    def enable_all_logs(self,logEnable=True):
+    def enable_all_logs(self, logEnable=True):
         for index in range(len(self.channels)):
             if self.channel_is_active[index]:
                 self.check_logChannels[index].setChecked(logEnable)
                 self.enable_frequency_logging(index)
 
-    def user_set_target(self,index):
+    def user_set_target(self, index):
         try:
             userInput = float(self.edit_freqTargets[index].text())
             if userInput < self.acceptableFreqRange[0] or userInput > self.acceptableFreqRange[1]:
-                raise UserWarning('Requested value ('+str(userInput)+') is outside allowed range ('+str(self.acceptableFreqRange[0])+' to '+str(self.acceptableFreqRange[1])+')')
+                raise UserWarning('Requested value (' + str(userInput) + ') is outside allowed range (' + str(
+                    self.acceptableFreqRange[0]) + ' to ' + str(self.acceptableFreqRange[1]) + ')')
             self.freqTargets[index] = userInput
         except Exception as e:
-            
+
             sys.exc_clear()
             self.edit_freqTargets[index].setText('{:.3f}'.format(self.freqTargets[index]))
             print('')
@@ -468,7 +476,7 @@ class CounterWidget(QMainWindow):
             print(e)
             print('')
 
-    def enable_reference_feedback(self,index):
+    def enable_reference_feedback(self, index):
         if self.check_refFeedbacks[index].isChecked() and self.laser_connected:
             for ii in range(len(self.check_refFeedbacks)):
                 if ii != index:
@@ -476,13 +484,13 @@ class CounterWidget(QMainWindow):
                     self.refLaserFeedbacks[index] = False
             self.log.warning('Feedback to reference laser enabled on channel %i' % self.channels[index])
             self.refLaserFeedbacks[index] = True
-            self.refFeedbackStartDatetime = datetime.datetime.now().strftime(self.timefmt) #YYY-MM-DD_HHMMSS
+            self.refFeedbackStartDatetime = datetime.datetime.now().strftime(self.timefmt)  # YYY-MM-DD_HHMMSS
             self.lastRefFeedbackTime = -9999
             self.refFeedbackStrikes[index] = 0
         else:
             self.log.warning('Feedback to reference laser disabled on channel %i' % self.channels[index])
             self.check_refFeedbacks[index].setChecked(False)
-            self.refLaserFeedbacks = [False]*len(self.refLaserFeedbacks)
+            self.refLaserFeedbacks = [False] * len(self.refLaserFeedbacks)
 
     def connect_laser(self):
         if self.check_laserConnect.isChecked():
@@ -494,9 +502,9 @@ class CounterWidget(QMainWindow):
             except Exception as e:
                 self.check_laserConnect.setChecked(False)
                 print(e)
-                self.log.warning('Failed to connect ORION Laser on '+port)
+                self.log.warning('Failed to connect ORION Laser on ' + port)
         else:
-            for  index in range(len(self.refLaserFeedbacks)):
+            for index in range(len(self.refLaserFeedbacks)):
                 self.check_refFeedbacks[index].setChecked(False)
                 self.enable_reference_feedback(index)
             self.reference_laser.close()
@@ -527,7 +535,7 @@ class CounterWidget(QMainWindow):
         else:
             self.reference_laser.set_t(int(usr_in))
 
-    def set_temperature_port(self,index):
+    def set_temperature_port(self, index):
         try:
             self.temp_port_numbers[index] = int(self.edit_portNumbers[index].text())
         except Exception:
@@ -535,28 +543,32 @@ class CounterWidget(QMainWindow):
             print('Invalid input')
             self.populate_textboxes()
 
-    def enable_temperature_feedback(self,index):
+    def enable_temperature_feedback(self, index):
         if self.check_tempFeedbacks[index].isChecked():
             try:
                 test = AsyncSocketComms.AsyncSocketClient(self.temp_port_numbers[index])
                 self.IPC_clients[index] = test
                 self.tempFeedbacks[index] = True
-                self.tempFeedbackStartDatetimes[index] = datetime.datetime.now().strftime(self.timefmt) #YYY-MM-DD_HHMMSS
+                self.tempFeedbackStartDatetimes[index] = datetime.datetime.now().strftime(
+                    self.timefmt)  # YYY-MM-DD_HHMMSS
                 self.lastTempFeedbackTimes[index] = -9999
-                self.log.warning('Socket connection on port  %i successful; begin temp feedback' % self.temp_port_numbers[index])
+                self.log.warning(
+                    'Socket connection on port  %i successful; begin temp feedback' % self.temp_port_numbers[index])
             except socket.error:
                 sys.exc_clear()
-                self.log.warning('No server detected at port %i; cannot start temp feedback' % self.temp_port_numbers[index])
+                self.log.warning(
+                    'No server detected at port %i; cannot start temp feedback' % self.temp_port_numbers[index])
                 self.check_tempFeedbacks[index].setChecked(False)
         else:
             self.log.warning('Temperature feedback on channel %i disabled' % self.channels[index])
             self.tempFeedbacks[index] = False
 
-    def commit_to_temp_adjustment(self,index):
+    def commit_to_temp_adjustment(self, index):
         if self.tempFeedbacks[index]:
             try:
                 self.IPC_clients[index].send_text('COMMITADJUST\n')
-                self.log.warning('Channel %i temperature adjust value (%.2f) added to set point' % (self.channels[index],self.tempAdjustValues[index]))
+                self.log.warning('Channel %i temperature adjust value (%.2f) added to set point' % (
+                    self.channels[index], self.tempAdjustValues[index]))
             except socket.error:
                 # Failed to send to the socket port; the server has
                 # been disconnected (happens if temp program closed).
@@ -590,7 +602,7 @@ class CounterWidget(QMainWindow):
 
     def close_cleanup(self):
         # Prints the number 2. Every time.
-        print(1+1)
+        print(1 + 1)
 
     def closeEvent(self, event):
         # QT method, cannot rename
@@ -606,8 +618,6 @@ class CounterWidget(QMainWindow):
         return
 
 
-
-
 def main():
     from counter_widget import CounterWidget
     from PyQt5.QtWidgets import QApplication
@@ -620,18 +630,19 @@ def main():
     aw = CounterWidget()
     allowSetForegroundWindow.allowSetForegroundWindow()
     SetWindowPos(aw.winId(),
-                    win32con.HWND_TOPMOST, # = always on top. only reliable way to bring it to the front on windows
-                    0, 0, 0, 0,
-                    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
+                 win32con.HWND_TOPMOST,  # = always on top. only reliable way to bring it to the front on windows
+                 0, 0, 0, 0,
+                 win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
     SetWindowPos(aw.winId(),
-                    win32con.HWND_NOTOPMOST, # disable the always on top, but leave window at its top position
-                    0, 0, 0, 0,
-                    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
+                 win32con.HWND_NOTOPMOST,  # disable the always on top, but leave window at its top position
+                 0, 0, 0, 0,
+                 win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
 
     aw.raise_()
     aw.show()
     aw.setWindowTitle('Counter Display')
     app.exec_()
+
 
 if __name__ == '__main__':
     main()
