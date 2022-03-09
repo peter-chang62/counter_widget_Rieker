@@ -6,15 +6,32 @@ datalength = 29
 
 class Counter:
     def __init__(self, COM):
-        self.COM = COM
+        # initialize the Serial instance
         self.ser = serial.Serial()
-        self.ser.port = self.COM
+
+        # set the serial's communication port
+        self.COM = COM
+
+        # the baudrate should already be 9600, but just so you know
         self.ser.baudrate = 9600
+
+        # select the high frequency channel
         self.select_high_freq_channel()
+
+    @property
+    def COM(self):
+        return self.ser.port
+
+    @COM.setter
+    def COM(self, port):
+        assert type(port) == str
+        assert port[:3] == 'COM'
+
+        self.ser.port = port
 
     def select_high_freq_channel(self):
         # initialization from Scott Egbert
-        # Power up select CH2 frequency mode (the high speed chacxnnel)
+        # Power up select CH2 frequency mode (the high speed channel)
         self.open()
         self.ser.write(b"$E2222*")
         self.close()
@@ -24,6 +41,11 @@ class Counter:
         read = self.ser.read(size)
         self.close()
         return read
+
+    def writeonce(self, byt):
+        self.open()
+        self.ser.write(byt)
+        self.close()
 
     def open(self):
         self.ser.open()
