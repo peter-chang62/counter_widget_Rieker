@@ -24,8 +24,8 @@ class Counter:
 
     @COM.setter
     def COM(self, port):
-        assert type(port) == str
-        assert port[:3] == 'COM'
+        assert type(port) == str, f"the port must be a string, but got: {port}"
+        assert port[:3] == 'COM', f"the port must start with 'COM' but got {port}"
 
         self.ser.port = port
 
