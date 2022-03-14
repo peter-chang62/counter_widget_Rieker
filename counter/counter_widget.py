@@ -1,16 +1,17 @@
-try:  # python 2
-    range = xrange
-except NameError:  # python 3
-    pass
-import sys, os, time, datetime, random, logging
+import os, time, datetime, random, logging
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMainWindow
-from Qt.QtCompat import loadUi
+# from Qt.QtCompat import loadUi
 import hpcounters, orionlasers
 import AsyncSocketComms, socket
+import numpy as np
+from Window import Ui_MainWindow
 
 # USETEMP = True
 USETEMP = False
+
+array = np.zeros((2, 200))
+count = np.array([0, 0])
 
 
 def read_text(edit_field):
@@ -43,11 +44,13 @@ def setup_ui(uifile, base_instance=None):
 
 
 # GUI Subclass
-class CounterWidget(QMainWindow):
+class CounterWidget(QMainWindow, Ui_MainWindow):
 
-    def __init__(self, parent=None):
-        super(CounterWidget, self).__init__(parent)
-        self.base_instance = setup_ui('counter_widget.ui', self)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # super(CounterWidget, self).__init__(parent)
+        # self.base_instance = setup_ui('counter_widget.ui', self)
+        self.setupUi(self)
 
         ##################################################################
         ### Set simData = True to test program w/o a counter hooked up ###
@@ -236,6 +239,10 @@ class CounterWidget(QMainWindow):
         self.populate_textboxes()
         self.show()
 
+        # TODO delete this
+        self.array = np.zeros((2, 200))
+        self.count = np.array([0, 0])
+
     def timer_handler(self):
 
         thisTime = time.clock()
@@ -252,11 +259,19 @@ class CounterWidget(QMainWindow):
             try:
                 # Get result of last measurement
                 self.freqs[index] = self.counter.get_result()
+
+                # TODO delete this
+                if self.count[index] < len(self.array[0]):
+                    self.array[index][self.count[index]] = self.freqs[index]
+                    print(self.count[index])
+                    self.count[index] += 1
+
+
             except Exception as e:
                 print(e)
                 # This is likely a counter timeout; probably there is no signal
                 # on self.channel[index], so stop trying to measure it
-                sys.exc_clear()
+
                 self.log.warning('Read failed on channel ' + str(self.channels[index]))
                 self.check_activateChannels[index].setChecked(False)
                 self.enable_channels()
@@ -329,7 +344,7 @@ class CounterWidget(QMainWindow):
 
                         except Exception as e:
                             # Failed to set new laser temp; turn off feedback
-                            sys.exc_clear()
+
                             self.log.warning('Failed to communicate with ref laser')
                             print(e)
                             self.check_refFeedbacks[index].setChecked(False)
@@ -362,7 +377,7 @@ class CounterWidget(QMainWindow):
                         # Failed to send to the socket port; the server has
                         # been disconnected (happens if temp program closed).
                         # Stop feedback
-                        sys.exc_clear()
+
                         self.log.warning('Unable to communicate with server at port %i' % self.temp_port_numbers[index])
                         self.check_tempFeedbacks[index].setChecked(False)
                         self.enable_temperature_feedback(index)
@@ -440,7 +455,8 @@ class CounterWidget(QMainWindow):
         try:
             self.log_files[index].close()
         except Exception:
-            sys.exc_clear()
+            pass
+
         if self.check_logChannels[index].isChecked():
             self.logging_channel[index] = True
             startDateTime = datetime.datetime.now().strftime(self.timefmt)  # YYY-MM-DD_HHMMSS
@@ -469,7 +485,6 @@ class CounterWidget(QMainWindow):
             self.freqTargets[index] = userInput
         except Exception as e:
 
-            sys.exc_clear()
             self.edit_freqTargets[index].setText('{:.3f}'.format(self.freqTargets[index]))
             print('')
             print('Invalid input:')
@@ -539,7 +554,7 @@ class CounterWidget(QMainWindow):
         try:
             self.temp_port_numbers[index] = int(self.edit_portNumbers[index].text())
         except Exception:
-            sys.exc_clear()
+
             print('Invalid input')
             self.populate_textboxes()
 
@@ -555,7 +570,7 @@ class CounterWidget(QMainWindow):
                 self.log.warning(
                     'Socket connection on port  %i successful; begin temp feedback' % self.temp_port_numbers[index])
             except socket.error:
-                sys.exc_clear()
+
                 self.log.warning(
                     'No server detected at port %i; cannot start temp feedback' % self.temp_port_numbers[index])
                 self.check_tempFeedbacks[index].setChecked(False)
@@ -573,7 +588,7 @@ class CounterWidget(QMainWindow):
                 # Failed to send to the socket port; the server has
                 # been disconnected (happens if temp program closed).
                 # Stop feedback
-                sys.exc_clear()
+
                 self.log.warning('Unable to communicate with server at port %i' % self.temp_port_numbers[index])
         self.check_tempFeedbacks[index].setChecked(False)
         self.enable_temperature_feedback(index)
@@ -587,7 +602,7 @@ class CounterWidget(QMainWindow):
             self.laser_feedback_period = float(self.edit_laserFeedbackPeriod.text())
             self.laser_feedback_threshold = float(self.edit_laserFeedbackThreshold.text())
         except ValueError:
-            sys.exc_clear()
+
             print('Invalid input')
             self.populate_textboxes()
 
@@ -618,13 +633,14 @@ class CounterWidget(QMainWindow):
         return
 
 
-def main():
-    from counter_widget import CounterWidget
+if __name__ == '__main__':
+    # from counter_widget import CounterWidget
     from PyQt5.QtWidgets import QApplication
     import sys
     import allowSetForegroundWindow
     from win32gui import SetWindowPos
     import win32con
+
     app = QApplication(sys.argv)
 
     aw = CounterWidget()
@@ -642,7 +658,3 @@ def main():
     aw.show()
     aw.setWindowTitle('Counter Display')
     app.exec_()
-
-
-if __name__ == '__main__':
-    main()

@@ -1,6 +1,7 @@
-import visa, sys, math
+import pyvisa as visa
+import sys, math
 
-COUNTER_ID_PREFIX = 'HEWLETT-PACKARD,53131A,0,'
+COUNTER_ID_PREFIX = 'HEWLETT-PACKARD,53132A,0,'
 DEFAULT_GATE_TIME = 0.1
 
 

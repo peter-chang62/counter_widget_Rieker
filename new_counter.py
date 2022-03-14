@@ -1,7 +1,10 @@
+import time
+import matplotlib.pyplot as plt
 import numpy as np
 import serial
+import clipboard_and_style_sheet
 
-datalength = 29
+datalength = 25
 
 
 class Counter:
@@ -54,13 +57,43 @@ class Counter:
         self.ser.close()
 
 
-# com18 is green fa-2 counter
-# com17 is the fa-5 counter
+c1 = Counter('COM16')
+c1.readonce(100)
 
-# fa-5 counter works
-c = Counter('COM18')
-print(c.readonce(datalength * 5))
+c2 = Counter('COM18')
+c2.readonce(100)
 
-# fa-2 doesn't work
-c = Counter('COM17')
-print(c.readonce(datalength * 5))
+time.sleep(1)
+c1.ser.open()
+c2.ser.open()
+
+npts = 200
+Data1 = np.zeros(npts)
+Data2 = np.zeros(npts)
+for i in range(npts):
+    data = c1.ser.read(25)
+    data = data[:-5]
+    print(data)
+    Data1[i] = float(data)
+
+    data = c2.ser.read(29)
+    data = data[7:-2]
+    print(data)
+    Data2[i] = float(data)
+
+    print(i)
+
+plt.figure()
+plt.plot(Data1, '.-', label='fa-5 counter')
+plt.plot(Data2, '.-', label='fa-2 counter')
+plt.plot(Data1 - Data2 + np.mean(Data1), '.-', label='diff')
+plt.legend(loc='best')
+
+window = np.ones(10)
+conv1 = np.convolve(Data1, window, mode='valid') / np.sum(window)
+conv2 = np.convolve(Data2, window, mode='valid') / np.sum(window)
+plt.figure()
+plt.plot(conv1, '.-', label='fa-5 counter')
+plt.plot(conv2, '.-', label='fa-2 counter')
+plt.plot(conv1 - conv2 + np.mean(conv1), '.-', label='diff')
+plt.legend(loc='best')
