@@ -1,17 +1,18 @@
 import os, time, datetime, random, logging
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMainWindow
-# from Qt.QtCompat import loadUi
 import hpcounters, orionlasers
 import AsyncSocketComms, socket
 import numpy as np
 from Window import Ui_MainWindow
+import serial
 
 # USETEMP = True
 USETEMP = False
 
-array = np.zeros((2, 200))
-count = np.array([0, 0])
+# channels for Agilent and chinese counter
+channel_hpc = 1
+channel_chin = 2
 
 
 def read_text(edit_field):
@@ -23,33 +24,68 @@ def read_text(edit_field):
     return None
 
 
-def setup_ui(uifile, base_instance=None):
-    """Load a Qt Designer .ui file and returns an instance of the user interface
-    Args:
-        uifile (str): Absolute path to .ui file
-        base_instance (QWidget): The widget into which UI widgets are loaded
-    Returns:
-        QWidget: the base instance
-    """
-    # from https://github.com/mottosso/Qt.py/blob/master/examples/loadUi/baseinstance1.py
-    ui = loadUi(uifile)  # Qt.py mapped function
-    if not base_instance:
-        return ui
-    else:
-        for member in dir(ui):
-            if not member.startswith('__') and \
-                    member != 'staticMetaObject':
-                setattr(base_instance, member, getattr(ui, member))
-        return ui
+class Counter:
+    def __init__(self, COM):
+        # initialize the Serial instance
+        self.ser = serial.Serial()
+
+        # set the serial's communication port
+        self.COM = COM
+
+        # the baudrate should already be 9600, but just so you know
+        self.ser.baudrate = 9600
+
+    @property
+    def COM(self):
+        return self.ser.port
+
+    @COM.setter
+    def COM(self, port):
+        assert type(port) == str, f"the port must be a string, but got: {port}"
+        assert port[:3] == 'COM', f"the port must start with 'COM' but got {port}"
+
+        self.ser.port = port
+
+    def select_high_freq_channel(self):
+        # initialization from Scott Egbert
+        # Power up select CH2 frequency mode (the high speed channel)
+        self.open()
+        self.ser.write(b"$E2222*")
+        self.close()
+
+    def select_low_freq_channel(self):
+        # initialization from Scott Egbert
+        # Power up select CH2 frequency mode (the high speed channel)
+        self.open()
+        self.ser.write(b"$E2020*")
+        self.close()
+
+    def readonce(self, size):
+        self.open()
+        read = self.ser.read(size)
+        self.close()
+        return read
+
+    def writeonce(self, byt):
+        self.open()
+        self.ser.write(byt)
+        self.close()
+
+    def open(self):
+        self.ser.open()
+
+    def close(self):
+        self.ser.close()
+
+    def read_and_return_float(self):
+        dat = str(self.ser.read(29))
+        dat = float((dat.split('F-CH2:')[1]).split('\\r')[0])
+        return dat
 
 
-# GUI Subclass
 class CounterWidget(QMainWindow, Ui_MainWindow):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # super(CounterWidget, self).__init__(parent)
-        # self.base_instance = setup_ui('counter_widget.ui', self)
         self.setupUi(self)
 
         ##################################################################
@@ -215,7 +251,7 @@ class CounterWidget(QMainWindow, Ui_MainWindow):
             self.update_display(index)
             self.edit_freqTargets[index].setText('{:.3f}'.format(self.freqTargets[index]))
 
-        # Load counter
+        # Load Agilent counter
         if self.simData:
             self.gateTime = 0.1
         else:
@@ -226,7 +262,17 @@ class CounterWidget(QMainWindow, Ui_MainWindow):
             self.counter.set_clock_external(True)
             self.counter.set_apporx_freq([1, 2], 199868311)
             self.gateTime = self.counter.get_gate_time()
-            self.counter.begin_freq_measure(self.channels[self.index])
+
+            # The Agilent only takes data on one of its channels now
+            # self.counter.begin_freq_measure(self.channels[self.index])
+            self.counter.begin_freq_measure(channel_hpc)
+
+        # Load the Chinese counter from eBay
+        self.offset_agilent_chin = 8.646939525961876
+        self.chin_counter = Counter('COM18')
+        self.chin_counter.select_high_freq_channel()
+        self.chin_counter.readonce(100)
+        self.chin_counter.open()
 
         # Set up timer to handle measurement events
         # Timer interval is set to couter gate time;
@@ -238,10 +284,6 @@ class CounterWidget(QMainWindow, Ui_MainWindow):
         # Show the GUI
         self.populate_textboxes()
         self.show()
-
-        # TODO delete this
-        self.array = np.zeros((2, 200))
-        self.count = np.array([0, 0])
 
     def timer_handler(self):
 
@@ -257,15 +299,14 @@ class CounterWidget(QMainWindow, Ui_MainWindow):
             self.freqs[index] = self.freqs[index] + (random.random() - .5) * 20
         else:
             try:
-                # Get result of last measurement
-                self.freqs[index] = self.counter.get_result()
+                if self.channels[index] == 1:
+                    # Get result of last measurement
+                    self.freqs[index] = self.counter.get_result()
+                elif self.channels[index] == 2:
+                    self.freqs[index] = 1010e6 - self.chin_counter.read_and_return_float() + self.offset_agilent_chin
 
-                # TODO delete this
-                if self.count[index] < len(self.array[0]):
-                    self.array[index][self.count[index]] = self.freqs[index]
-                    print(self.count[index])
-                    self.count[index] += 1
-
+                else:
+                    raise ValueError("self.channels[index] should be either 1 or 2")
 
             except Exception as e:
                 print(e)
@@ -276,8 +317,11 @@ class CounterWidget(QMainWindow, Ui_MainWindow):
                 self.check_activateChannels[index].setChecked(False)
                 self.enable_channels()
                 return
+
             # Start new measurement for the incremented index
-            self.counter.begin_freq_measure(self.channels[self.index])
+            # The Agilent only takes data on one of its channels now
+            # self.counter.begin_freq_measure(self.channels[self.index])
+            self.counter.begin_freq_measure(channel_hpc)
 
         self.calc_values()
 
@@ -620,6 +664,9 @@ class CounterWidget(QMainWindow, Ui_MainWindow):
         print(1 + 1)
 
     def closeEvent(self, event):
+        # close the com port to the chinese counter
+        self.chin_counter.close()
+
         # QT method, cannot rename
         self.log.warning('GUI exit; cleaning up')
         self.enable_all_logs(False)
@@ -638,23 +685,9 @@ if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     import sys
     import allowSetForegroundWindow
-    from win32gui import SetWindowPos
-    import win32con
 
     app = QApplication(sys.argv)
-
     aw = CounterWidget()
     allowSetForegroundWindow.allowSetForegroundWindow()
-    SetWindowPos(aw.winId(),
-                 win32con.HWND_TOPMOST,  # = always on top. only reliable way to bring it to the front on windows
-                 0, 0, 0, 0,
-                 win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
-    SetWindowPos(aw.winId(),
-                 win32con.HWND_NOTOPMOST,  # disable the always on top, but leave window at its top position
-                 0, 0, 0, 0,
-                 win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
-
-    aw.raise_()
-    aw.show()
     aw.setWindowTitle('Counter Display')
     app.exec_()

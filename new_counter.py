@@ -5,8 +5,6 @@ import serial
 import clipboard_and_style_sheet
 import counter.hpcounters as HPC
 
-datalength = 25
-
 
 class Counter:
     def __init__(self, COM):
@@ -60,6 +58,11 @@ class Counter:
 
     def close(self):
         self.ser.close()
+
+    def read_and_return_float(self):
+        dat = str(self.ser.read(29))
+        dat = float((dat.split('F-CH2:')[1]).split('\\r')[0])
+        return dat
 
 
 # %% test 1
@@ -141,37 +144,49 @@ class Counter:
 #     print(i)
 
 # %% test2 for green counter
-# npts = 100
-# Data_chin = np.zeros(npts)
-# Data_hpc = np.zeros(npts)
-# chin_cnt = Counter('COM18')
-# hpc = HPC.AgilentCounter()
-#
-# # initially open
-# chin_cnt.open()
-# # chin_cnt.ser.write(b"$E2020*")
-# chin_cnt.ser.write(b"$E2222*")
-# chin_cnt.ser.read(100)
-# chin_cnt.close()
-# chin_cnt.open()
-#
-# for i in range(npts):
-#     # read
-#     dat = str(chin_cnt.ser.read(29))
-#     hpc.begin_freq_measure(1)
-#     Data_hpc[i] = hpc.get_result()
-#
-#     # dat = float((dat.split('F-CH1:')[1]).split('\\r')[0])
-#     dat = float((dat.split('F-CH2:')[1]).split('\\r')[0])
-#     Data_chin[i] = dat
-#
-#     print(i, dat, Data_hpc[i])
+npts = 1000
+Data_chin = np.zeros(npts)
+Data_hpc = np.zeros(npts)
+chin_cnt = Counter('COM18')
+hpc = HPC.AgilentCounter()
+hpc_channel = 2
 
-# plt.figure()
-# plt.plot(Data_hpc, label='hpc')
-# plt.plot(Data_chin, label='chin')
-# plt.legend(loc='best')
+# initially open
+chin_cnt.open()
+# chin_cnt.ser.write(b"$E2020*")
+chin_cnt.ser.write(b"$E2222*")
+chin_cnt.ser.read(100)
+chin_cnt.close()
+chin_cnt.open()
 
+for i in range(npts):
+    # read
+    hpc.begin_freq_measure(hpc_channel)
+    first = hpc.get_result()
+
+    dat = str(chin_cnt.ser.read(29))
+
+    hpc.begin_freq_measure(hpc_channel)
+    second = hpc.get_result()
+
+    Data_hpc[i] = 1010e6 - (first + second) / 2
+
+    # dat = float((dat.split('F-CH1:')[1]).split('\\r')[0])
+    dat = float((dat.split('F-CH2:')[1]).split('\\r')[0])
+    Data_chin[i] = dat
+
+    print(i, dat, Data_hpc[i])
+
+chin_cnt.close()
+
+# %%
+plt.figure()
+plt.plot(Data_hpc, label='hpc')
+plt.plot(Data_chin, label='chin')
+plt.legend(loc='best')
+
+diff = np.mean(Data_hpc - Data_chin)
+print("average difference is {avg_diff} hertz".format(avg_diff=diff))
 
 # %% test2 for black counter
 # npts = 100
@@ -207,40 +222,40 @@ class Counter:
 # plt.legend(loc='best')
 
 # %% all at one time
-npts = 100
-Data_hpc1 = np.zeros(npts)
-Data_hpc2 = np.zeros(npts)
-Data_black = np.zeros(npts)
-Data_green = np.zeros(npts)
-
-hpc = HPC.AgilentCounter()
-green = Counter('COM18')
-# black = Counter('COM16')
-
-green.select_low_freq_channel()
-# black.select_low_freq_channel()
-green.readonce(100)
-# black.readonce(100)
-time.sleep(1)
-
-green.open()
-# black.open()
-for i in range(npts):
-    hpc.begin_freq_measure(1)
-    dat_hpc1 = hpc.get_result()
-    # dat_black = str(black.ser.read(25))
-    dat_green = str(green.ser.read(29))
-    hpc.begin_freq_measure(2)
-    dat_hpc2 = hpc.get_result()
-
-    # dat_black = float(dat_black.split("b'")[1].split(',\\r')[0])
-    dat_green = float((dat_green.split('F-CH1:')[1]).split('\\r')[0])
-    
-    Data_hpc1[i] = dat_hpc1
-    Data_hpc2[i] = dat_hpc2
-    Data_green[i] = dat_green
-    # Data_black[i] = dat_black
-
-    print(i, dat_hpc1, dat_green, dat_hpc2)
-
-plt.figure()
+# npts = 100
+# Data_hpc1 = np.zeros(npts)
+# Data_hpc2 = np.zeros(npts)
+# Data_black = np.zeros(npts)
+# Data_green = np.zeros(npts)
+#
+# hpc = HPC.AgilentCounter()
+# green = Counter('COM18')
+# # black = Counter('COM16')
+#
+# green.select_low_freq_channel()
+# # black.select_low_freq_channel()
+# green.readonce(100)
+# # black.readonce(100)
+# time.sleep(1)
+#
+# green.open()
+# # black.open()
+# for i in range(npts):
+#     hpc.begin_freq_measure(1)
+#     dat_hpc1 = hpc.get_result()
+#     # dat_black = str(black.ser.read(25))
+#     dat_green = str(green.ser.read(29))
+#     hpc.begin_freq_measure(2)
+#     dat_hpc2 = hpc.get_result()
+#
+#     # dat_black = float(dat_black.split("b'")[1].split(',\\r')[0])
+#     dat_green = float((dat_green.split('F-CH1:')[1]).split('\\r')[0])
+#
+#     Data_hpc1[i] = dat_hpc1
+#     Data_hpc2[i] = dat_hpc2
+#     Data_green[i] = dat_green
+#     # Data_black[i] = dat_black
+#
+#     print(i, dat_hpc1, dat_green, dat_hpc2)
+#
+# plt.figure()
