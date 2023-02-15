@@ -1,28 +1,39 @@
+# %% package imports
 import pyvisa as visa
 import sys, math
 
-COUNTER_ID_PREFIX = 'HEWLETT-PACKARD,53132A,0,'
+# %% global variables
+COUNTER_ID_PREFIX = "HEWLETT-PACKARD,53132A,0,"
 DEFAULT_GATE_TIME = 0.1
 
 
+# %% agilent counter
 #######HP Agilent Counter Class##########
-
-class AgilentCounter():
-
-    def __init__(self, counter_id=None, use_external_clock=False, gate_time=DEFAULT_GATE_TIME, name=None):
+class AgilentCounter:
+    def __init__(
+        self,
+        counter_id=None,
+        use_external_clock=False,
+        gate_time=DEFAULT_GATE_TIME,
+        name=None,
+    ):
 
         # Shoulde be 'GPIB0::3::INSTR'
 
-        print('')
+        print("")
         if counter_id is None:
-            print('Attempting to connect any HP 53131A counter')
+            print("Attempting to connect any HP 53131A counter")
         else:
-            print('Attempting to connect counter ' + counter_id)
+            print("Attempting to connect counter " + counter_id)
 
         self.rm = visa.ResourceManager()
-        GPIB_list = self.rm.list_resources(u'GPIB?*INSTR')
+        GPIB_list = self.rm.list_resources("GPIB?*INSTR")
 
-        print('Found ' + str(len(GPIB_list)) + ' GPIB device(s), searching for counter...\n')
+        print(
+            "Found "
+            + str(len(GPIB_list))
+            + " GPIB device(s), searching for counter...\n"
+        )
 
         found_counter = False
         for resource_name in GPIB_list:  # Likely will be 'GPIB0::3::INSTR'
@@ -40,19 +51,19 @@ class AgilentCounter():
                 self.counter.before_close()
                 self.counter.close()
             except Exception as e:
-                print('Failed to test device at ' + resource_name)
+                print("Failed to test device at " + resource_name)
                 print(e)
 
         if not found_counter:
             if counter_id is None:
-                error = 'Failed to find an Agilent Counter attached on GPIB.'
+                error = "Failed to find an Agilent Counter attached on GPIB."
             else:
-                error = 'Failed to find ' + counter_id + ' attached on GPIB.'
+                error = "Failed to find " + counter_id + " attached on GPIB."
             print(error)
-            print('')
+            print("")
             raise UserWarning(error)
 
-        print('Found counter at ' + resource_name)
+        print("Found counter at " + resource_name)
 
         self.gate_time = gate_time
 
@@ -61,9 +72,9 @@ class AgilentCounter():
 
         except Exception as e:
             print(e)
-            error = 'Discovered counter failed initial configuration.'
+            error = "Discovered counter failed initial configuration."
             print(error)
-            print('')
+            print("")
             #            try:
             #                self.close()
             #            except Exception:
@@ -80,16 +91,18 @@ class AgilentCounter():
         self.resource_name = resource_name
 
         if name is None:
-            self.name = 'HP Counter (' + str(self.counter_id) + ') at ' + self.resource_name
+            self.name = (
+                "HP Counter (" + str(self.counter_id) + ") at " + self.resource_name
+            )
         else:
             self.name = name
 
-        print(self.name + ' was connected successfully.')
-        print('')
+        print(self.name + " was connected successfully.")
+        print("")
 
     def set_config_default(self):
 
-        # Based on "To Optimize Throughput" 
+        # Based on "To Optimize Throughput"
         #   Agilent 53131A/132A Programming Guide, Page 142 (3-73)
         #   (53131_Prog.pdf)
 
@@ -99,7 +112,10 @@ class AgilentCounter():
         self.counter.write("*SRE 0")  # Clear service request enable register
         self.counter.write("*ESE 0")  # Clear event status enable register
         self.counter.write(
-            ":STAT:PRES")  # Preset enable registers and transition filters for operation and questionable status structures.
+            ":STAT:PRES"
+        )  
+        # Preset enable registers and transition filters for operation and
+        # questionable status structures.
 
         # Changes to optimize throughput
         self.counter.write(":FORMAT ASCII")  # ASCII format for fastest throughput
@@ -110,7 +126,10 @@ class AgilentCounter():
         # self.counter.write(":FREQ:ARM:STAR:SOUR IMM")
         # self.counter.write(":FREQ:ARM:STOP:SOUR IMM")
 
-        ## These three lines enable the DIGit arming mode. NOTE: Values over 9 lead to timeout errors with querry() or if read() is performed to0 quickly after trigger. Must wait ~>0.75s for 9 digit arm, ~>20 seconds for 10
+        ## These three lines enable the DIGit arming mode. 
+        # NOTE: Values over 9 lead to timeout errors with querry() or if read()
+        # is performed to0 quickly after trigger. Must wait ~>0.75s for 9 digit
+        # arm, ~>20 seconds for 10
         # self.counter.write(":FREQ:ARM:STAR:SOUR IMM")
         # self.counter.write(":FREQ:ARM:STOP:SOUR DIG")
         # self.counter.write(":FREQ:ARM:STOP:DIG 8")
@@ -121,10 +140,16 @@ class AgilentCounter():
         self.counter.write(":FREQ:ARM:STOP:TIM " + str(self.gate_time))
 
         self.counter.write(
-            ":DIAG:CAL:INT:AUTO OFF")  # Disable automatic interpolater calibration. The most recent calibration values are used in the calculation of frequency
-        # self.counter.write("DIAGnostic:CALibration:INTerpolator:AUTO ONCE") # Calibrates the interpolator circuit in the Counter when the ONCE parameter is used.
+            ":DIAG:CAL:INT:AUTO OFF"
+        )  
+        # Disable automatic interpolater calibration. The most recent
+        # calibration values are used in the calculation of frequency
+        # self.counter.write("DIAGnostic:CALibration:INTerpolator:AUTO ONCE") 
+        # Calibrates the interpolator circuit in the Counter when the ONCE
+        # parameter is used.
         self.counter.write(
-            ":DISP:ENAB OFF")  # Turn off the counter display. This greatly increases measurement throughput.
+            ":DISP:ENAB OFF"
+        )  # Turn off the counter display. This greatly increases measurement throughput.
 
         # Disable any post processing.
         self.counter.write(":CALC:MATH:STATE OFF")
@@ -132,7 +157,11 @@ class AgilentCounter():
         self.counter.write(":CALC3:AVER:STATE OFF")
         self.counter.write(":HCOPY:CONT OFF")  # Disable any printing operation
         self.counter.write(
-            "*DDT #15FETC?")  # Define the Trigger command. This means the command FETC? does not need to be sent for every measurement, decreasing the number of bytes transferred over the bus. Can use "READ?" command too.
+            "*DDT #15FETC?"
+        )  
+        # Define the Trigger command. This means the command FETC? does not
+        # need to be sent for every measurement, decreasing the number of bytes
+        # transferred over the bus. Can use "READ?" command too.
 
         self.counter.write(":FUNC 'FREQ 2'")  # Select frequency mode and channel
         self.counter.write(":INIT:CONT ON")  # Put counter in Run mode
@@ -148,7 +177,9 @@ class AgilentCounter():
                     channel = 2
                 self.begin_freq_measure(channel)
                 measured_freq = self.get_result()
-                self.counter.write(':FREQ:EXP' + str(int(channel)) + ' ' + str(measured_freq))
+                self.counter.write(
+                    ":FREQ:EXP" + str(int(channel)) + " " + str(measured_freq)
+                )
                 results.append(measured_freq)
 
         else:
@@ -156,13 +187,17 @@ class AgilentCounter():
                 approx_freqs = [approx_freqs]
 
             if len(approx_freqs) < len(channels):
-                approx_freqs = approx_freqs * int(math.ceil(len(channels) / len(approx_freqs)))
+                approx_freqs = approx_freqs * int(
+                    math.ceil(len(channels) / len(approx_freqs))
+                )
 
             for channel, measured_freq in zip(channels, approx_freqs):
                 if channel == -1:
                     channel = 2
 
-                self.counter.write(':FREQ:EXP' + str(int(channel)) + ' ' + str(measured_freq))
+                self.counter.write(
+                    ":FREQ:EXP" + str(int(channel)) + " " + str(measured_freq)
+                )
                 results.append(measured_freq)
 
         return results
@@ -173,7 +208,9 @@ class AgilentCounter():
             self.counter.write(":ROSC:SOUR EXT")
             self.counter.write(":ROSC:EXT:CHECK OFF")
         else:
-            # Use internal oscillator. If you want to use an external timebase, you must select it and turn off the automatic detection using: ":ROSC:EXT:CHECK OFF"
+            # Use internal oscillator. If you want to use an external timebase,
+            # you must select it and turn off the automatic detection using:
+            # ":ROSC:EXT:CHECK OFF"
             self.counter.write(":ROSC:SOUR INT")
 
     def set_gate_time(self, gate_time):
@@ -197,7 +234,7 @@ class AgilentCounter():
             self.counter.write(":FUNC 'FREQ 2'")
             self.counter.assert_trigger()
         else:
-            raise UserWarning(str(channel) + ' is not a valid channel number.')
+            raise UserWarning(str(channel) + " is not a valid channel number.")
 
     def get_result(self):
         return float(self.counter.read())
@@ -208,11 +245,15 @@ class AgilentCounter():
         self.counter.write("*SRE 0")  # Clear service request enable register
         self.counter.write("*ESE 0")  # Clear event status enable register
         self.counter.write(
-            ":STAT:PRES")  # Preset enable registers and transition filters for operation and questionable status structures.
+            ":STAT:PRES"
+        )  
+        # Preset enable registers and transition filters for operation and
+        # questionable status structures.
         self.counter.before_close()
         self.counter.close()
         self.rm.close()
 
 
-if __name__ == '__main__':
+# %% run
+if __name__ == "__main__":
     c = AgilentCounter()
