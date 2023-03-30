@@ -7,8 +7,7 @@ COUNTER_ID_PREFIX = "HEWLETT-PACKARD,53132A,0,"
 DEFAULT_GATE_TIME = 0.1
 
 
-# %% agilent counter
-#######HP Agilent Counter Class##########
+# %% HP Agilent Counter Class
 class AgilentCounter:
     def __init__(
         self,

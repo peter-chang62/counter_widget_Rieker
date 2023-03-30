@@ -70,7 +70,7 @@ class Counter:
 
     def select_low_freq_channel(self):
         # initialization from Scott Egbert
-        # Power up select CH2 frequency mode (the high speed channel)
+        # Power up select CH2 frequency mode (the low speed channel)
         self.open()
         self.ser.write(b"$E2020*")
         self.close()
